@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CrystalDock": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Users\\ShadowEvil\\source\\repos\\CrystalDock\\Resources"
+    }
+  }
+}
