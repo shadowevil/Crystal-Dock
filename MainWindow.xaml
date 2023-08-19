@@ -5,8 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CrystalDock"
         mc:Ignorable="d"
-        Title="WindowsDock" Height="100" Width="800"
+        Title="WindowsDock"
+        Height="300" Width="800"
         WindowStyle="None"
+        Background="Transparent"
         AllowsTransparency="True"
         ResizeMode="NoResize"
         WindowStartupLocation="Manual"
@@ -17,11 +19,13 @@
         ShowInTaskbar="false"
         Loaded="Window_Loaded"
         Closing="Window_Closing">
-    <Window.Background>
-        <SolidColorBrush Opacity="0.1" Color="White"/>
-    </Window.Background>
     <Grid x:Name="mainGrid">
-        <Grid x:Name="IconGrid" Margin="5, 5, 5, 15"></Grid>
+        <Canvas x:Name="canvasOverlay" Grid.ZIndex="1" MouseLeave="ZoomedImg_MouseLeave"></Canvas>
+        <Grid x:Name="IconGrid" Margin="5, 5, 5, 5">
+            <Grid.Background>
+                <SolidColorBrush Opacity="0.1" Color="White"/>
+            </Grid.Background>
+        </Grid>
         <Line Name="BottomLine" Stroke="White" StrokeThickness="4" X1="0" X2="900" Y1="96" Y2="96" Margin="0" />
     </Grid>
 </Window>

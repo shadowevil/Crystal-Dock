@@ -124,6 +124,9 @@
   <data name="IconFolder" xml:space="preserve">
     <value>Icons\</value>
   </data>
+  <data name="MissingIconPath" xml:space="preserve">
+    <value>Icons\MissingIcon.png</value>
+  </data>
   <data name="SettingsIniFile" xml:space="preserve">
     <value>Settings.ini</value>
   </data>

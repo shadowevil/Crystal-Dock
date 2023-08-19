@@ -1,9 +1,12 @@
-﻿using System;
+﻿using CrystalDock.Properties;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace CrystalDock
 {
@@ -17,25 +20,41 @@ namespace CrystalDock
             LoadSettings(filePath);
         }
 
-        public Dictionary<string, string> GetGlobalSettings
+        public void RemoveEntry(string key)
+        {
+            if (IsDockLocked) return;
+            if (sections.TryGetValue(key, out Dictionary<string, string>? v))
+            {
+                if (File.Exists(Properties.Resources.IconFolder + v["IconImage"]))
+                {
+                    File.Delete(Properties.Resources.IconFolder + v["IconImage"]);
+                    File.Delete(Properties.Resources.IconFolder + v["IconImageHover"]);
+                }
+                sections.Remove(key);
+            }
+            MainWindow._instance?.LoadButtons();
+        }
+
+        public void AddEntry(IconInfo info)
+        {
+            sections.Add(NextEntry, info.ToDictionary());
+        }
+
+        public string NextEntry
         {
             get
             {
-                return sections["Global"];
+                int count = GetIconEntries().Keys.Where(x => x.StartsWith("Icon")).Count();
+                while (sections.TryGetValue("Icon" + count.ToString(), out var value)) count++;
+                return "Icon" + count.ToString();
             }
         }
 
-        public void RemoveEntry(string key)
-        {
-            if (sections.TryGetValue(key, out Dictionary<string, string>? v))
-            {
-                sections.Remove(key);
-            }
-        }
+        public bool IsDockLocked => GetValue<bool>("Global", "PositionLocked");
 
         public void ToggleDockPositionLock()
         {
-            if(Convert.ToBoolean(sections["Global"]["PositionLocked"]) == true)
+            if(IsDockLocked == true)
                 sections["Global"]["PositionLocked"] = "false";
             else
                 sections["Global"]["PositionLocked"] = "true";
@@ -43,6 +62,21 @@ namespace CrystalDock
 
         private void LoadSettings(string filePath)
         {
+            if(!File.Exists(filePath))
+            {
+                File.CreateText(filePath).Close();
+
+                List<string> _lines = new List<string>
+                {
+                    "[Global]",
+                    "PositionLocked=" + Properties.Settings.Default.PositionLocked,
+                    "IconSize=" + Properties.Settings.Default.IconSize,
+                    "IconMargins=" + Properties.Settings.Default.IconMargins
+                };
+
+                File.WriteAllLines(filePath, _lines);
+            }
+
             string[] lines = File.ReadAllLines(filePath, Encoding.UTF8);
 
             string? currentSection = null;
@@ -69,27 +103,14 @@ namespace CrystalDock
             }
         }
 
-        public bool GetBoolean(string section, string key, bool defaultValue = false)
+        public T? GetValue<T>(string section, string key)
         {
-            if (sections.TryGetValue(section, out var properties) &&
-                properties.TryGetValue(key, out var value) &&
-                bool.TryParse(value, out var result))
-            {
-                return result;
-            }
-
-            return defaultValue;
-        }
-
-        public string GetString(string section, string key, string defaultValue = "")
-        {
-            if (sections.TryGetValue(section, out var properties) &&
+            if(sections.TryGetValue(section, out var properties) &&
                 properties.TryGetValue(key, out var value))
             {
-                return value;
+                return (T?)TypeDescriptor.GetConverter(typeof(T))?.ConvertFromString(value);
             }
-
-            return defaultValue;
+            return default(T?);
         }
 
         public Dictionary<string, IconInfo> GetIconEntries()
@@ -106,30 +127,6 @@ namespace CrystalDock
                 });
             }
             return rtn;
-        }
-
-        public IconInfo[] GetIcons()
-        {
-            List<IconInfo> icons = new List<IconInfo>();
-
-            foreach (var section in sections.Keys)
-            {
-                if (section.StartsWith("Icon"))
-                {
-                    string iconImage = GetString(section, "IconImage", "");
-                    string iconImageHover = GetString(section, "IconImageHover", "");
-                    string action = GetString(section, "Action", "");
-
-                    icons.Add(new IconInfo
-                    {
-                        IconImage = iconImage,
-                        IconImageHover = iconImageHover,
-                        Action = action
-                    });
-                }
-            }
-
-            return icons.ToArray();
         }
 
         public void SaveSettings()
@@ -161,5 +158,15 @@ namespace CrystalDock
         public string IconImage { get; set; } = "";
         public string IconImageHover { get; set; } = "";
         public string Action { get; set; } = "";
+
+        public Dictionary<string, string> ToDictionary()
+        {
+            return new Dictionary<string, string>()
+            {
+                { "IconImage", IconImage },
+                { "IconImageHover", IconImageHover },
+                { "Action", Action }
+            };
+        }
     }
 }

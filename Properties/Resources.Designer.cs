@@ -80,6 +80,15 @@ namespace CrystalDock.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Icons\MissingIcon.png.
+        /// </summary>
+        internal static string MissingIconPath {
+            get {
+                return ResourceManager.GetString("MissingIconPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Settings.ini.
         /// </summary>
         internal static string SettingsIniFile {

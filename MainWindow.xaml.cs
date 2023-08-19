@@ -10,9 +10,17 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
-using System.Windows.Media;
 using MessageBox = System.Windows.MessageBox;
+using DataFormats = System.Windows.Forms.DataFormats;
+using SizeF = System.Drawing.Size;
 using System.Diagnostics;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Image = System.Windows.Controls.Image;
+using System.Windows.Controls.Primitives;
+using Application = System.Windows.Application;
+using System.Windows.Media;
+using Panel = System.Windows.Controls.Panel;
+using Cursors = System.Windows.Input.Cursors;
 
 namespace CrystalDock
 {
@@ -21,10 +29,9 @@ namespace CrystalDock
     /// </summary>
     public partial class MainWindow : Window
     {
-        private bool dragging = false;
-
+        public static MainWindow? _instance;
         private Settings settings;
-        private NotifyIcon ni = new NotifyIcon();
+        private NotifyIcon TaskBarIcon = new NotifyIcon();
 
         public MainWindow()
         {
@@ -32,11 +39,110 @@ namespace CrystalDock
             this.Top = Properties.Settings.Default.WindowTop;
             this.Left = Properties.Settings.Default.WindowLeft;
             settings = new Settings(Properties.Resources.SettingsIniFile);
+
+            this.AllowDrop = true;
+            _instance = this;
+        }
+
+        protected override void OnDrop(System.Windows.DragEventArgs e)
+        {
+            e.Handled = true;
+            base.OnDrop(e);
+            if(e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if(filePaths.Count() > 0)
+                {
+                    // Only get the first file discard the rest
+                    string filePath = filePaths[0];
+                    switch(Path.GetExtension(filePath).ToLower().Substring(1))
+                    {
+                        case "url":
+                            {
+                                string[] lines = File.ReadAllLines(filePath);
+                                string URL = (lines.FirstOrDefault(x => x.StartsWith("URL")) ?? "").Split('=').Last();
+                                string iconPath = (lines.FirstOrDefault(x => x.StartsWith("IconFile")) ?? "").Split('=').Last();
+                                if (!File.Exists(iconPath)) return;
+                                string savePath = Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + settings.NextEntry;
+                                if (File.Exists(savePath + ".png")) File.Delete(savePath + ".png");
+                                if (File.Exists(savePath + "_over.png")) File.Delete(savePath + "_over.png");
+                                if (Path.GetExtension(iconPath).ToLower().Substring(1) == "exe")
+                                {
+                                    System.Drawing.Icon.ExtractAssociatedIcon(iconPath)?.ToBitmap().Save(savePath + ".png", System.Drawing.Imaging.ImageFormat.Png);
+                                }
+                                else
+                                {
+                                    new Icon(iconPath, new SizeF(256, 256)).ToBitmap().Save(savePath + ".png", System.Drawing.Imaging.ImageFormat.Png);
+                                }
+                                if (!File.Exists(savePath + ".png")) return;
+                                File.Copy(savePath + ".png", savePath + "_over.png");
+                                IconInfo iconInfo = new IconInfo();
+                                iconInfo.IconImage = settings.NextEntry + ".png";
+                                iconInfo.IconImageHover = settings.NextEntry + "_over.png";
+                                iconInfo.Action = URL;
+                                settings.AddEntry(iconInfo);
+                                LoadButtons();
+                                break;
+                            }
+                        case "lnk":
+                            {
+                                // Do something with shortcut files?
+                                ShortcutInfo info = ShortcutInfo.FromShortcutFile(filePath);
+                                string URL = info.TargetPath;
+                                //Discord cause they be different
+                                if (info.TargetPath.Contains("Update.exe") && info.Arguments.Contains("--processStart Discord.exe"))
+                                {
+                                    URL = info.WorkingDirectory + "\\" + "Discord.exe";
+                                }
+                                string savePath = Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + settings.NextEntry;
+                                if (File.Exists(savePath + ".png")) File.Delete(savePath + ".png");
+                                if (File.Exists(savePath + "_over.png")) File.Delete(savePath + "_over.png");
+                                if (Path.GetExtension(URL).ToLower().Substring(1) == "exe")
+                                {
+                                    System.Drawing.Icon.ExtractAssociatedIcon(URL)?.ToBitmap().Save(savePath + ".png", System.Drawing.Imaging.ImageFormat.Png);
+                                }
+                                else return;
+                                if (!File.Exists(savePath + ".png")) return;
+                                File.Copy(savePath + ".png", savePath + "_over.png");
+                                IconInfo iconInfo = new IconInfo();
+                                iconInfo.IconImage = settings.NextEntry + ".png";
+                                iconInfo.IconImageHover = settings.NextEntry + "_over.png";
+                                iconInfo.Action = URL;
+                                settings.AddEntry(iconInfo);
+                                LoadButtons();
+                                break;
+                            }
+                        case "exe":
+                            {
+                                // filePath is the path to the executable
+                                // using Icon.ExtractAssociatedIcon(fileName) we can extract the icon (wont have a fancy hover but meh)
+                                string URL = filePath;
+                                string savePath = Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + settings.NextEntry;
+                                if (File.Exists(savePath + ".png")) File.Delete(savePath + ".png");
+                                if (File.Exists(savePath + "_over.png")) File.Delete(savePath + "_over.png");
+                                if (Path.GetExtension(URL).ToLower().Substring(1) == "exe")
+                                {
+                                    System.Drawing.Icon.ExtractAssociatedIcon(URL)?.ToBitmap().Save(savePath + ".png", System.Drawing.Imaging.ImageFormat.Png);
+                                }
+                                else return;
+                                if (!File.Exists(savePath + ".png")) return;
+                                File.Copy(savePath + ".png", savePath + "_over.png");
+                                IconInfo iconInfo = new IconInfo();
+                                iconInfo.IconImage = settings.NextEntry + ".png";
+                                iconInfo.IconImageHover = settings.NextEntry + "_over.png";
+                                iconInfo.Action = URL;
+                                settings.AddEntry(iconInfo);
+                                LoadButtons();
+                                break;
+                            }
+                    }
+                }
+            }
         }
 
         private void MainWindow_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"])) return;
+            if (settings.IsDockLocked) return;
             ShiftWindowOntoScreenHelper.ShiftWindowOntoScreen(this);
             Properties.Settings.Default.WindowTop = this.Top;
             Properties.Settings.Default.WindowLeft = this.Left;
@@ -45,11 +151,10 @@ namespace CrystalDock
 
         private void MainWindow_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"])) return;
+            if (settings.IsDockLocked) return;
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
         }
-
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern int GetWindowLong(IntPtr hWnd, int nIndex);
@@ -64,32 +169,40 @@ namespace CrystalDock
             var helper = new WindowInteropHelper(this).Handle;
             //Performing some magic to hide the form from Alt+Tab
             SetWindowLong(helper, GWL_EX_STYLE, (GetWindowLong(helper, GWL_EX_STYLE) | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW);
+            this.Width = (settings.GetValue<UInt32>("Global", "IconSize") * 2) + settings.GetValue<int>("Global", "IconMargins");
+            this.Height = settings.GetValue<UInt32>("Global", "IconSize") * 2;
+            mainGrid.Margin = new Thickness(0, Height - 16 - settings.GetValue<UInt32>("Global", "IconSize") - settings.GetValue<UInt32>("Global", "IconMargins"), 0, 0);
 
-            ni.Icon = Properties.Resources.CrystalDockIcon_Plain;
-            ni.Visible = true;
+            ShiftWindowOntoScreenHelper.ShiftWindowOntoScreen(this);
+            Properties.Settings.Default.WindowTop = this.Top;
+            Properties.Settings.Default.WindowLeft = this.Left;
+            Properties.Settings.Default.Save();
+
+            TaskBarIcon.Icon = Properties.Resources.CrystalDockIcon_Plain;
+            TaskBarIcon.Text = "Crystal Dock";
+            TaskBarIcon.Visible = true;
             ContextMenuStrip cm = new ContextMenuStrip();
             //cm.Items.Add("Settings", null, new EventHandler(OpenSettings));
             ToolStripMenuItem DockToggle = new ToolStripMenuItem()
             {
                 Name = "DockToggle",
-                Checked = Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]),
+                Checked = settings.IsDockLocked,
                 Text = "Dock Locked",
-                CheckOnClick = true,
-
+                CheckOnClick = true
             };
             DockToggle.Click += ToggleDockLocking;
             cm.Items.Add(DockToggle);
             //cm.Items.Add("Unlock Dock", null, new EventHandler(UnlockDock));
             cm.Items.Add(new ToolStripSeparator());
             cm.Items.Add("Exit", null, new EventHandler(ExitApplication));
-            ni.ContextMenuStrip = cm;
-            ni.MouseClick += (s, e) =>
+            TaskBarIcon.ContextMenuStrip = cm;
+            TaskBarIcon.MouseClick += (s, e) =>
             {
                 if(e.Button == MouseButtons.Right)
                 {
-                    if (ni.ContextMenuStrip != null)
+                    if (TaskBarIcon.ContextMenuStrip != null)
                     {
-                        ni.ContextMenuStrip.Show();
+                        TaskBarIcon.ContextMenuStrip.Show();
                     }
                 }
             };
@@ -97,9 +210,10 @@ namespace CrystalDock
             if(settings != null)
             {
                 LoadButtons();
-                if (Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]))
+                //if (Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]))
+                if(settings.IsDockLocked)
                 {
-                    this.Background.Opacity = 0.005;
+                    IconGrid.Background.Opacity = 0.005;
                     return;
                 }
             }
@@ -109,105 +223,207 @@ namespace CrystalDock
         {
             if (settings == null) return;
             settings.ToggleDockPositionLock();
-            if (!Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]))
-                this.Background.Opacity = 0.1;
-            else this.Background.Opacity = 0.005;
+            if (!settings.IsDockLocked)
+                IconGrid.Background.Opacity = 0.1;
+            else IconGrid.Background.Opacity = 0.005;
         }
 
-        private void LoadButtons()
+        public void LoadButtons()
         {
-            IconGrid.Children.Clear();
-            IconGrid.ColumnDefinitions.Clear();
-            int column = 0; // Start from the first column
+            ClearIconGrid();
+
+            int column = 0;
 
             foreach (var iconEntry in settings.GetIconEntries())
             {
                 IconInfo iconInfo = iconEntry.Value;
-                if (File.Exists(Properties.Resources.IconFolder + iconInfo.IconImage))
+                string iconImagePath = Path.Combine(Directory.GetCurrentDirectory(), Properties.Resources.IconFolder, iconInfo.IconImage);
+
+                if (File.Exists(iconImagePath))
                 {
-                    System.Windows.Controls.Image iconImg = new System.Windows.Controls.Image
-                    {
-                        Name = iconInfo.IconImage.Substring(0, iconInfo.IconImage.Length - 4),
-                        Width = Convert.ToUInt32(settings.GetGlobalSettings["IconSize"]),
-                        Height = Convert.ToUInt32(settings.GetGlobalSettings["IconSize"]),
-                        Source = new BitmapImage(new Uri(Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + iconInfo.IconImage)),
-                        Cursor = System.Windows.Input.Cursors.Hand,
-                        Tag = iconInfo,
-                        ContextMenu = new ContextMenu()
-                    };
-
-                    MenuItem tsmi = new MenuItem()
-                    {
-                        Header = "Remove"
-                    };
-                    ICommand? cmd = null;
-                    cmd = new RelayCommand<string>(RemoveEntry);
-                    tsmi.Command = cmd;
-                    tsmi.CommandParameter = iconEntry.Key;
-                    iconImg.ContextMenu.Items.Add(tsmi);
-                    iconImg.ContextMenuOpening += (s, e) =>
-                    {
-                        e.Handled = Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]);
-                    };
-
-                    iconImg.Opacity = 0.5;
-
-                    // Create a new column definition for the current image
-                    ColumnDefinition colDefinition = new ColumnDefinition();
-                    IconGrid.ColumnDefinitions.Add(colDefinition);
-
-                    Grid.SetRow(iconImg, 0); // Assuming you want to place the images in the first row
-                    Grid.SetColumn(iconImg, column);
-
-                    iconImg.MouseLeftButtonUp += IconImg_MouseLeftButtonUp;
-
-                    iconImg.MouseEnter += (s, e) =>
-                    {
-                        if (s is System.Windows.Controls.Image g)
-                            g.Source = new BitmapImage(new Uri(Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + (g.Tag as IconInfo)?.IconImageHover));
-                    };
-                    iconImg.MouseLeave += (s, e) =>
-                    {
-                        if (s is System.Windows.Controls.Image g)
-                            g.Source = new BitmapImage(new Uri(Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + (g.Tag as IconInfo)?.IconImage));
-                    };
+                    System.Windows.Controls.Image iconImg = CreateIconImage(iconEntry, iconImagePath, column);
 
                     IconGrid.Children.Add(iconImg);
 
-                    column++; // Move to the next column for the next image
+                    column++;
+                } else if(File.Exists(Properties.Resources.MissingIconPath))
+                {
+                    System.Windows.Controls.Image iconImg = CreateIconImage(iconEntry, Properties.Resources.MissingIconPath, column);
+
+                    IconGrid.Children.Add(iconImg);
+
+                    column++;
                 }
             }
 
-            IconGrid.MaxWidth = (Convert.ToUInt32(settings.GetGlobalSettings["IconSize"]) + 10) * IconGrid.Children.Count;
-            IconGrid.Width = IconGrid.MaxWidth;
-            IconGrid.Height = (Convert.ToUInt32(settings.GetGlobalSettings["IconSize"]) + 10);
-            mainGrid.MaxWidth = IconGrid.MaxWidth + 10;
-            mainGrid.Width = mainGrid.MaxWidth;
-            mainGrid.Height = IconGrid.Height + 10;
-            MaxWidth = IconGrid.MaxWidth + 10;
-            Width = MaxWidth;
-            Height = mainGrid.Height;
-            BottomLine.X2 = Width;
-            BottomLine.Y1 = Height - 4;
-            BottomLine.Y2 = Height - 4;
+            AdjustGridSizes();
         }
 
-        private void RemoveEntry(string key)
+        private void ClearIconGrid()
         {
-            settings.RemoveEntry(key);
-            LoadButtons();
+            foreach (var item in IconGrid.Children.OfType<System.Windows.Controls.Image>())
+            {
+                item.Source = null;
+            }
+
+            IconGrid.Children.Clear();
+            IconGrid.ColumnDefinitions.Clear();
+        }
+
+        private System.Windows.Controls.Image CreateIconImage(KeyValuePair<string, IconInfo> iconInfo, string imagePath, int column)
+        {
+            System.Windows.Controls.Image iconImg = new System.Windows.Controls.Image
+            {
+                Name = iconInfo.Value.IconImage.Substring(0, iconInfo.Value.IconImage.Length - 4),
+                Width = settings.GetValue<UInt32>("Global", "IconSize"),
+                Height = settings.GetValue<UInt32>("Global", "IconSize"),
+                //Cursor = System.Windows.Input.Cursors.Hand,
+                Tag = iconInfo,
+                ContextMenu = CreateContextMenu(iconInfo.Key),
+                Opacity = 0.5
+            };
+
+            // Load the image using a stream
+            using (FileStream fileStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read))
+            {
+                BitmapImage bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.StreamSource = fileStream;
+                bitmapImage.EndInit();
+
+                iconImg.Source = bitmapImage;
+            }
+
+            iconImg.MouseLeftButtonUp += IconImg_MouseLeftButtonUp;
+            iconImg.ContextMenuOpening += IconImg_ContextMenuOpening;
+            iconImg.MouseEnter += IconImg_MouseEnter;
+            iconImg.MouseLeave += IconImg_MouseLeave;
+
+            Grid.SetRow(iconImg, 0);
+            Grid.SetColumn(iconImg, column);
+
+            ColumnDefinition colDefinition = new ColumnDefinition();
+            IconGrid.ColumnDefinitions.Add(colDefinition);
+
+            return iconImg;
+        }
+
+        private void IconImg_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (sender is Image img)
+            {
+                KeyValuePair<string, IconInfo> iconInfo = (KeyValuePair<string, IconInfo>)img.Tag;
+                if (iconInfo.Value == null) return;
+
+                // Calculate the column index of the hovered icon
+                int columnIndex = Grid.GetColumn(img);
+
+                // Calculate the position based on the icon's column index within the IconGrid
+                double left = columnIndex * (settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins"));
+                double top = 0; // Assuming the icons are in the first row
+
+                // Create a new Image for the zoomed icon
+                Image zoomedImg = new Image
+                {
+                    Source = img.Source,
+                    Width = img.ActualWidth + 10,
+                    Height = img.ActualHeight + 10,
+                    ContextMenu = CreateContextMenu(iconInfo.Key),
+                    Cursor = Cursors.Hand
+                };
+                zoomedImg.MouseLeave += ZoomedImg_MouseLeave;
+                zoomedImg.MouseLeftButtonUp += (_s, _e) => IconImg_MouseLeftButtonUp(sender, _e);
+                zoomedImg.ContextMenuOpening += IconImg_ContextMenuOpening;
+
+                // Apply a TranslateTransform to center the zoomed icon
+                double xOffset = (zoomedImg.Width - img.Width) / 2;
+                double yOffset = (zoomedImg.Height - img.Height) / 2;
+                zoomedImg.RenderTransform = new TranslateTransform(xOffset, yOffset);
+
+                Panel.SetZIndex(zoomedImg, int.MaxValue);
+
+                // Set the position of the zoomed icon within the Canvas overlay
+                Canvas.SetLeft(zoomedImg, left);
+                Canvas.SetTop(zoomedImg, top);
+
+                // Add the zoomed icon to the Canvas overlay
+                canvasOverlay.Children.Clear();
+                canvasOverlay.Children.Add(zoomedImg);
+            }
+        }
+
+        private void ZoomedImg_MouseLeave(object sender, MouseEventArgs e)
+        {
+            // Remove the zoomed icon from the Canvas overlay
+            MainWindow_MouseLeave(sender, e);
+            canvasOverlay.Children.Clear();
+        }
+
+        private void IconImg_MouseLeave(object sender, MouseEventArgs e)
+        {
+
+        }
+
+        private void IconImg_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            e.Handled = settings.IsDockLocked;
+        }
+
+        private ContextMenu CreateContextMenu(string iconKey)
+        {
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem removeItem = new MenuItem()
+            {
+                Header = "Remove",
+                Command = new RelayCommand<string>(settings.RemoveEntry),
+                CommandParameter = iconKey
+            };
+            MenuItem RefreshItem = new MenuItem()
+            {
+                Header = "Refresh",
+                Command = new RelayCommand(LoadButtons)
+            };
+
+            contextMenu.Items.Add(removeItem);
+            contextMenu.Items.Add(RefreshItem);
+
+            return contextMenu;
+        }
+
+        private void AdjustGridSizes()
+        {
+            int iconSizeWithMargin = (int)settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins");
+            int iconCount = IconGrid.Children.Count;
+
+            if (iconCount > 0)
+            {
+                this.Width = (settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins")) * iconCount;
+
+                IconGrid.MaxWidth = iconSizeWithMargin * iconCount;
+                IconGrid.Width = IconGrid.MaxWidth + settings.GetValue<int>("Global", "IconMargins");
+                IconGrid.Height = iconSizeWithMargin;
+
+                mainGrid.MaxWidth = IconGrid.MaxWidth + settings.GetValue<int>("Global", "IconMargins");
+                mainGrid.Width = mainGrid.MaxWidth;
+                mainGrid.Height = IconGrid.Height + settings.GetValue<int>("Global", "IconMargins");
+
+                BottomLine.X2 = mainGrid.Width;
+                BottomLine.Y1 = mainGrid.Height - 4;
+                BottomLine.Y2 = mainGrid.Height - 4;
+            }
         }
 
         private void IconImg_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (sender is System.Windows.Controls.Image iconImg)
             {
-                if (iconImg.Tag is IconInfo iconInfo)
+                if (iconImg.Tag is KeyValuePair<string, IconInfo> tag)
                 {
-                    using (Process myProcess = new Process())
+                    if (tag.Value is IconInfo iconInfo)
                     {
-                        myProcess.StartInfo.FileName = iconInfo.Action;
-                        myProcess.Start();
+                        e.Handled = true;
+                        ShellExecute(IntPtr.Zero, "open", iconInfo.Action, null, null, 1);
                     }
                 }
             }
@@ -225,16 +441,17 @@ namespace CrystalDock
 
         private void MainWindow_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            if (!Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]))
+            if (!settings.IsDockLocked)
             {
-                this.Background.Opacity = 0.1;
+                IconGrid.Background.Opacity = 0.1;
                 return;
             }
-            this.Background.Opacity = 0.005;
+            IconGrid.Background.Opacity = 0.005;
             foreach (System.Windows.Controls.Image iconImg in IconGrid.Children.OfType<System.Windows.Controls.Image>())
             {
                 iconImg.Opacity = 0.5;
             }
+            canvasOverlay.Children.Clear();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -244,17 +461,26 @@ namespace CrystalDock
 
         private void MainWindow_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            if (!Convert.ToBoolean(settings.GetGlobalSettings["PositionLocked"]))
+            if (!settings.IsDockLocked)
             {
-                this.Background.Opacity = 0.1;
+                IconGrid.Background.Opacity = 0.1;
                 return;
             }
-            this.Background.Opacity = 0.005;
+            IconGrid.Background.Opacity = 0.005;
             foreach (System.Windows.Controls.Image iconImg in IconGrid.Children.OfType<System.Windows.Controls.Image>())
             {
                 iconImg.Opacity = 1;
             }
         }
+
+        [DllImport("shell32.dll", SetLastError = true)]
+        private static extern IntPtr ShellExecute(
+            IntPtr hwnd,
+            string lpOperation,
+            string lpFile,
+            string? lpParameters,
+            string? lpDirectory,
+            int nShowCmd);
     }
     public class RelayCommand<T> : ICommand
     {
@@ -275,6 +501,32 @@ namespace CrystalDock
         public void Execute(object? parameter)
         {
             _execute((T)parameter!);
+        }
+
+        public event EventHandler? CanExecuteChanged
+        {
+            add { CommandManager.RequerySuggested += value; }
+            remove { CommandManager.RequerySuggested -= value; }
+        }
+    }
+
+    public class RelayCommand : ICommand
+    {
+        private readonly Action _execute;
+
+        public RelayCommand(Action execute)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+        }
+
+        public bool CanExecute(object? parameter)
+        {
+            return true;
+        }
+
+        public void Execute(object? parameter)
+        {
+            _execute();
         }
 
         public event EventHandler? CanExecuteChanged

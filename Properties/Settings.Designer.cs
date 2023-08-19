@@ -46,5 +46,41 @@ namespace CrystalDock.Properties {
                 this["WindowLeft"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool PositionLocked {
+            get {
+                return ((bool)(this["PositionLocked"]));
+            }
+            set {
+                this["PositionLocked"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("92")]
+        public uint IconSize {
+            get {
+                return ((uint)(this["IconSize"]));
+            }
+            set {
+                this["IconSize"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int IconMargins {
+            get {
+                return ((int)(this["IconMargins"]));
+            }
+            set {
+                this["IconMargins"] = value;
+            }
+        }
     }
 }
