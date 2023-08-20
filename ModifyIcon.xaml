@@ -22,7 +22,7 @@
         <Label Content="Icon:" Height="25" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" FontWeight="Bold" Canvas.Left="10" Canvas.Top="169"/>
         <TextBox x:Name="HoverIconTxt" TextChanged="NormalIconTxt_TextChanged" TextWrapping="NoWrap" Text="Placeholder.png" Width="298" Canvas.Left="112" Canvas.Top="198" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         <Label Content="Icon Hover:" Height="25" Width="100" HorizontalContentAlignment="Right" FontWeight="Bold" Canvas.Left="10" Canvas.Top="194" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-        <TextBox x:Name="IconActionTxt" TextChanged="ActionTxt_Changed"  TextWrapping="NoWrap" Text="PlaceholderAction" Width="298" Canvas.Left="112" Canvas.Top="223" HorizontalAlignment="Center" VerticalAlignment="Top" ScrollViewer.CanContentScroll="True"/>
+        <TextBox x:Name="IconActionTxt" TextWrapping="NoWrap" Text="PlaceholderAction" Width="298" Canvas.Left="112" Canvas.Top="223" HorizontalAlignment="Center" VerticalAlignment="Top" ScrollViewer.CanContentScroll="True"/>
         <Label Content="Icon Action:" Height="25" Width="100" HorizontalContentAlignment="Right" FontWeight="Bold" Canvas.Left="10" Canvas.Top="219" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         <Grid Height="59" Canvas.Left="10" Canvas.Top="249" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>

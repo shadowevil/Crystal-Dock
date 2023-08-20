@@ -128,9 +128,6 @@ namespace CrystalDock
                     HoverIcon.Source = bitmapImage;
                 }
             }
-
-            if (!File.Exists(IconActionTxt.Text))
-            { SaveBtn.IsEnabled = false; return; }
             SaveBtn.IsEnabled = true;
         }
 
@@ -155,20 +152,6 @@ namespace CrystalDock
         {
             this.DialogResult = false;
             this.Close();
-        }
-        private void ActionTxt_Changed(object sender, TextChangedEventArgs e)
-        {
-            if (sender is TextBox txt)
-            {
-                if (txt.Text.Contains("Placeholder")) return;
-                if (!File.Exists(txt.Text))
-                {
-                    txt.BorderBrush = new SolidColorBrush(Colors.Red);
-                } else
-                {
-                    txt.BorderBrush = new SolidColorBrush(Colors.Gray);
-                }
-            }
         }
 
         private void NormalIconTxt_TextChanged(object sender, TextChangedEventArgs e)
