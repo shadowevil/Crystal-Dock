@@ -398,7 +398,7 @@ namespace CrystalDock
 
             if (iconCount > 0)
             {
-                this.Width = (settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins")) * iconCount;
+                this.Width = (settings.GetValue<UInt32>("Global", "IconSize") + (settings.GetValue<int>("Global", "IconMargins") * 2)) * iconCount;
 
                 IconGrid.MaxWidth = iconSizeWithMargin * iconCount;
                 IconGrid.Width = IconGrid.MaxWidth + settings.GetValue<int>("Global", "IconMargins");
