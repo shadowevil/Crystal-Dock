@@ -266,7 +266,6 @@ namespace CrystalDock
                 // Create a new Image for the zoomed icon
                 Image zoomedImg = new Image
                 {
-                    Source = img.Source,
                     Width = img.ActualWidth + 10,
                     Height = img.ActualHeight + 10,
                     ContextMenu = CreateContextMenu(iconInfo.Key),
@@ -277,6 +276,18 @@ namespace CrystalDock
                 zoomedImg.ContextMenuOpening += IconImg_ContextMenuOpening;
                 zoomedImg.AllowDrop = true;
                 zoomedImg.Drop += (_s, _e) => OnDrop(_e);
+
+                // Load the image using a stream
+                using (FileStream fileStream = new FileStream(Properties.Resources.IconFolder + iconInfo.Value.IconImageHover, FileMode.Open, FileAccess.Read))
+                {
+                    BitmapImage bitmapImage = new BitmapImage();
+                    bitmapImage.BeginInit();
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.StreamSource = fileStream;
+                    bitmapImage.EndInit();
+
+                    zoomedImg.Source = bitmapImage;
+                }
 
                 // Apply a TranslateTransform to center the zoomed icon
                 double xOffset = (zoomedImg.Width - img.Width) / 2;
