@@ -309,6 +309,8 @@ namespace CrystalDock
 
         private void IconImg_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            if (settings == null) return;
+            if (!settings.IsDockLocked) return;
             if (sender is Image iconImg)
             {
                 if (iconImg.Tag is KeyValuePair<string, IconInfo> tag)
