@@ -17,8 +17,7 @@
         MouseDown="MainWindow_MouseDown"
         MouseUp="MainWindow_MouseUp"
         ShowInTaskbar="false"
-        Loaded="Window_Loaded"
-        Closing="Window_Closing">
+        Closing="MainWindow_Closing">
     <Grid x:Name="mainGrid">
         <Canvas x:Name="canvasOverlay" Grid.ZIndex="1" MouseLeave="ZoomedImg_MouseLeave"></Canvas>
         <Grid x:Name="IconGrid" Margin="5, 5, 5, 5">

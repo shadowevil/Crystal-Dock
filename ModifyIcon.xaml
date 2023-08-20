@@ -1,0 +1,38 @@
+﻿<Window x:Class="CrystalDock.ModifyIcon"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CrystalDock"
+        mc:Ignorable="d"
+        Title="ModifyIcon"
+        Height="334"
+        Width="440"
+        WindowStyle="ToolWindow">
+    <Canvas>
+        <Border BorderBrush="Black" BorderThickness="1" Width="100" Height="100" Margin="60,50,260,284">
+            <Image x:Name="NormalIcon" HorizontalAlignment="Left" Height="100" Margin="0,0,0,0" VerticalAlignment="Center" Width="100" Stretch="Fill" Cursor="Hand" Source="/MissingIcon.png" UseLayoutRounding="True"/>
+        </Border>
+        <Border BorderBrush="Black" BorderThickness="1" Width="100" Height="100" Margin="260,50,60,284">
+            <Image x:Name="HoverIcon" HorizontalAlignment="Left" Height="100" Margin="0,0,0,0" VerticalAlignment="Center" Width="100" Stretch="Fill" Cursor="Hand" Source="/MissingIcon.png" UseLayoutRounding="True"/>
+        </Border>
+        <Label Content="Modify Icon" Height="45" Canvas.Left="60" Width="300" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="24" FontWeight="Bold"/>
+
+        <TextBox x:Name="NormalIconTxt" TextChanged="NormalIconTxt_TextChanged" TextWrapping="NoWrap" Text="Placeholder.png" Width="298" HorizontalAlignment="Left" VerticalAlignment="Center" Canvas.Left="112" Canvas.Top="173"/>
+        <Label Content="Icon:" Height="25" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" HorizontalContentAlignment="Right" FontWeight="Bold" Canvas.Left="10" Canvas.Top="169"/>
+        <TextBox x:Name="HoverIconTxt" TextChanged="NormalIconTxt_TextChanged" TextWrapping="NoWrap" Text="Placeholder.png" Width="298" Canvas.Left="112" Canvas.Top="198" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Label Content="Icon Hover:" Height="25" Width="100" HorizontalContentAlignment="Right" FontWeight="Bold" Canvas.Left="10" Canvas.Top="194" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <TextBox x:Name="IconActionTxt" TextChanged="ActionTxt_Changed"  TextWrapping="NoWrap" Text="PlaceholderAction" Width="298" Canvas.Left="112" Canvas.Top="223" HorizontalAlignment="Center" VerticalAlignment="Top" ScrollViewer.CanContentScroll="True"/>
+        <Label Content="Icon Action:" Height="25" Width="100" HorizontalContentAlignment="Right" FontWeight="Bold" Canvas.Left="10" Canvas.Top="219" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Grid Height="59" Canvas.Left="10" Canvas.Top="249" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="SaveBtn" Content="Save" HorizontalAlignment="Center" VerticalAlignment="Center" Width="116" Grid.Column="0" Panel.ZIndex="999999" IsDefault="True"/>
+            <Button x:Name="CancelBtn" Content="Cancel" HorizontalAlignment="Center" VerticalAlignment="Center" Width="116" Grid.Column="2" Panel.ZIndex="9999"/>
+            <Button x:Name="OpenIconFolder" Content="Open Icon Folder" HorizontalAlignment="Center" VerticalAlignment="Center" Width="116" Panel.ZIndex="999999" IsDefault="True" Grid.Column="1"/>
+        </Grid>
+    </Canvas>
+</Window>

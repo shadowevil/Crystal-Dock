@@ -13,11 +13,27 @@ namespace CrystalDock
     public class Settings
     {
         private Dictionary<string, Dictionary<string, string>> sections;
+        public static Settings? settingsInstance = null;
 
         public Settings(string filePath)
         {
             sections = new Dictionary<string, Dictionary<string, string>>();
             LoadSettings(filePath);
+
+            settingsInstance = this;
+        }
+
+        public void UpdateEntry(string key, IconInfo iconInfo)
+        {
+            if (sections.ContainsKey(key))
+            {
+                sections[key] = new Dictionary<string, string>()
+                {
+                    { "IconImage", iconInfo.IconImage },
+                    { "IconImageHover", iconInfo.IconImageHover },
+                    { "Action", iconInfo.Action },
+                };
+            }
         }
 
         public void RemoveEntry(string key)
@@ -129,6 +145,15 @@ namespace CrystalDock
             return rtn;
         }
 
+        public IconInfo? GetIconInfo(string key)
+        {
+            if(sections.TryGetValue(key, out var value))
+            {
+                return IconInfo.FromDictionary(value);
+            }
+            return null;
+        }
+
         public void SaveSettings()
         {
             List<string> lines = new List<string>();
@@ -158,6 +183,21 @@ namespace CrystalDock
         public string IconImage { get; set; } = "";
         public string IconImageHover { get; set; } = "";
         public string Action { get; set; } = "";
+
+        public static IconInfo FromDictionary(Dictionary<string, string> dict)
+        {
+            IconInfo rtn = new IconInfo();
+            foreach(var kvp in dict)
+            {
+                switch(kvp.Key)
+                {
+                    case "IconImage": rtn.IconImage = kvp.Value; break;
+                    case "IconImageHover": rtn.IconImageHover = kvp.Value; break;
+                    case "Action": rtn.Action = kvp.Value; break;
+                }
+            }
+            return rtn;
+        }
 
         public Dictionary<string, string> ToDictionary()
         {

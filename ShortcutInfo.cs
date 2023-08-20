@@ -17,7 +17,7 @@ namespace CrystalDock
         {
         }
 
-        public static ShortcutInfo FromShortcutFile(string shortcutPath)
+        public static ShortcutInfo? FromShortcutFile(string shortcutPath)
         {
             if (!File.Exists(shortcutPath))
             {
@@ -27,14 +27,24 @@ namespace CrystalDock
             WshShell shell = new WshShell();
             IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
 
+            if (string.IsNullOrEmpty(shortcut.TargetPath))
+            {
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
+
+                return null;
+            }
+
+            Icon? icon = Icon.ExtractAssociatedIcon(shortcut.TargetPath);
+
             ShortcutInfo info = new ShortcutInfo
             {
                 TargetPath = shortcut.TargetPath,
                 Arguments = shortcut.Arguments,
                 WorkingDirectory = shortcut.WorkingDirectory,
                 Description = shortcut.Description,
-                _icon = Icon.ExtractAssociatedIcon(shortcut.TargetPath)
-        };
+                _icon = icon
+            };
 
             System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
             System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
