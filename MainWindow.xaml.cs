@@ -188,8 +188,9 @@ namespace CrystalDock
 
             if (settings == null)
                 return;
+            if (settings.IsDockLocked) return;
 
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] filePaths = (string[])e.Data.GetData(DataFormats.FileDrop);
                 if (filePaths.Length > 0)
