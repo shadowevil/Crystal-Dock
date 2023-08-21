@@ -12,6 +12,7 @@
         AllowsTransparency="True"
         ResizeMode="NoResize"
         WindowStartupLocation="Manual"
+        Loaded="MainWindow_Loaded"
         MouseEnter="MainWindow_MouseEnter"
         MouseLeave="MainWindow_MouseLeave"
         MouseDown="MainWindow_MouseDown"

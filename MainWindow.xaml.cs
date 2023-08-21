@@ -18,6 +18,7 @@ using Panel = System.Windows.Controls.Panel;
 using Cursors = System.Windows.Input.Cursors;
 using IconD = System.Drawing.Icon;
 using CancelEventArgs = System.ComponentModel.CancelEventArgs;
+using System.Diagnostics;
 
 namespace CrystalDock
 {
@@ -72,9 +73,6 @@ namespace CrystalDock
 
             this.AllowDrop = true;
             _instance = this;
-
-            var helper = new WindowInteropHelper(this).Handle;
-            SetWindowLong(helper, GWL_EX_STYLE, (GetWindowLong(helper, GWL_EX_STYLE) | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW);
 
             int iconSize = (int)settings.GetValue<UInt32>("Global", "IconSize");
             int iconMargins = (int)settings.GetValue<UInt32>("Global", "IconMargins");
@@ -163,7 +161,7 @@ namespace CrystalDock
                 iconImg.Opacity = 1;
             }
         }
-        private void MainWindow_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void MainWindow_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (settings == null) return;
             if (settings.IsDockLocked) return;
@@ -256,18 +254,17 @@ namespace CrystalDock
                 KeyValuePair<string, IconInfo> iconInfo = (KeyValuePair<string, IconInfo>)img.Tag;
                 if (iconInfo.Value == null) return;
 
-                // Calculate the column index of the hovered icon
                 int columnIndex = Grid.GetColumn(img);
 
-                // Calculate the position based on the icon's column index within the IconGrid
+                // Get the position based on the icon's column index within the IconGrid
                 double left = columnIndex * (settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins"));
-                double top = 0; // Assuming the icons are in the first row
+                double top = 0;
 
                 // Create a new Image for the zoomed icon
                 Image zoomedImg = new Image
                 {
-                    Width = img.ActualWidth + 10,
-                    Height = img.ActualHeight + 10,
+                    Width = img.ActualWidth + 10,   // Width + ZoomFactor
+                    Height = img.ActualHeight + 10, // Height + ZoomFactor
                     ContextMenu = CreateContextMenu(iconInfo.Key),
                     Cursor = Cursors.Hand
                 };
@@ -277,7 +274,6 @@ namespace CrystalDock
                 zoomedImg.AllowDrop = true;
                 zoomedImg.Drop += (_s, _e) => OnDrop(_e);
 
-                // Load the image using a stream
                 using (FileStream fileStream = new FileStream(Properties.Resources.IconFolder + iconInfo.Value.IconImageHover, FileMode.Open, FileAccess.Read))
                 {
                     BitmapImage bitmapImage = new BitmapImage();
@@ -289,7 +285,6 @@ namespace CrystalDock
                     zoomedImg.Source = bitmapImage;
                 }
 
-                // Apply a TranslateTransform to center the zoomed icon
                 double xOffset = (zoomedImg.Width - img.Width) / 2;
                 double yOffset = (zoomedImg.Height - img.Height) / 2;
                 zoomedImg.RenderTransform = new TranslateTransform(xOffset, yOffset);
@@ -330,7 +325,14 @@ namespace CrystalDock
                     if (tag.Value is IconInfo iconInfo)
                     {
                         e.Handled = true;
-                        ShellExecute(IntPtr.Zero, "open", iconInfo.Action, null, null, 1);
+                        if (File.Exists(iconInfo.Action) && Path.GetExtension(iconInfo.Action).Substring(1) == "exe")
+                        {
+                            Process.Start(iconInfo.Action);
+                        }
+                        else
+                        {
+                            ShellExecute(IntPtr.Zero, "open", iconInfo.Action, null, null, 1);
+                        }
                     }
                 }
             }
@@ -462,6 +464,8 @@ namespace CrystalDock
             iconImg.MouseLeftButtonUp += IconImg_MouseLeftButtonUp;
             iconImg.ContextMenuOpening += IconImg_ContextMenuOpening;
             iconImg.MouseEnter += IconImg_MouseEnter;
+            iconImg.AllowDrop = true;
+            iconImg.Drop += (_s, _e) => OnDrop(_e);
 
             Grid.SetRow(iconImg, 0);
             Grid.SetColumn(iconImg, column);
@@ -470,6 +474,14 @@ namespace CrystalDock
             IconGrid.ColumnDefinitions.Add(colDefinition);
 
             return iconImg;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            //Variable to hold the handle for the form
+            var helper = new WindowInteropHelper(this).Handle;
+            //Performing some magic to hide the form from Alt+Tab
+            SetWindowLong(helper, GWL_EX_STYLE, (GetWindowLong(helper, GWL_EX_STYLE) | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW);
         }
 
         private void AdjustGridSizes()
