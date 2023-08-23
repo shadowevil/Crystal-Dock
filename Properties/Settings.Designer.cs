@@ -26,24 +26,24 @@ namespace CrystalDock.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("100")]
-        public double WindowTop {
+        public double AppDockTop {
             get {
-                return ((double)(this["WindowTop"]));
+                return ((double)(this["AppDockTop"]));
             }
             set {
-                this["WindowTop"] = value;
+                this["AppDockTop"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("100")]
-        public double WindowLeft {
+        public double AppDockLeft {
             get {
-                return ((double)(this["WindowLeft"]));
+                return ((double)(this["AppDockLeft"]));
             }
             set {
-                this["WindowLeft"] = value;
+                this["AppDockLeft"] = value;
             }
         }
         
@@ -80,6 +80,75 @@ namespace CrystalDock.Properties {
             }
             set {
                 this["IconMargins"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool SystemMonitorVisible {
+            get {
+                return ((bool)(this["SystemMonitorVisible"]));
+            }
+            set {
+                this["SystemMonitorVisible"] = value;
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DebugMode {
+            get {
+                return ((bool)(this["DebugMode"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public double SystemMonitorTop {
+            get {
+                return ((double)(this["SystemMonitorTop"]));
+            }
+            set {
+                this["SystemMonitorTop"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public double SystemMonitorLeft {
+            get {
+                return ((double)(this["SystemMonitorLeft"]));
+            }
+            set {
+                this["SystemMonitorLeft"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("800")]
+        public double SystemMonitorWidth {
+            get {
+                return ((double)(this["SystemMonitorWidth"]));
+            }
+            set {
+                this["SystemMonitorWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        public double SystemMonitorHeight {
+            get {
+                return ((double)(this["SystemMonitorHeight"]));
+            }
+            set {
+                this["SystemMonitorHeight"] = value;
             }
         }
     }

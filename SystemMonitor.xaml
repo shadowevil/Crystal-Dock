@@ -1,0 +1,33 @@
+﻿<Window x:Class="CrystalDock.SystemMonitor"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CrystalDock"
+        mc:Ignorable="d"
+        Title="SystemMonitor"
+        Height="300" Width="800"
+        WindowStyle="None"
+        Background="Transparent"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        ShowInTaskbar="false"
+        Loaded="SysMonWindow_Loaded"
+        MouseDown="SystemMonitor_MouseDown"
+        MouseUp="SystemMonitor_MouseUp">
+    <Grid x:Name="mainGrid">
+        <StackPanel x:Name="mainStackPanel">
+
+        </StackPanel>
+        <Rectangle x:Name="resizeGripBottomRight"
+                   Width="12" Height="12" 
+                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                   Cursor="SizeNWSE"
+                   MouseEnter="resizeGripBottomRight_MouseEnter"
+                   MouseLeave="resizeGripBottomRight_MouseLeave"
+                   MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown"
+                   MouseMove="ResizeGrip_MouseMove"
+                   MouseLeftButtonUp="ResizeGrip_MouseLeftButtonUp"
+                   Fill="Red"/>
+    </Grid>
+</Window>

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CrystalDock"
         mc:Ignorable="d"
-        Title="WindowsDock"
+        Title="AppDock"
         Height="300" Width="800"
         WindowStyle="None"
         Background="Transparent"
@@ -17,8 +17,7 @@
         MouseLeave="MainWindow_MouseLeave"
         MouseDown="MainWindow_MouseDown"
         MouseUp="MainWindow_MouseUp"
-        ShowInTaskbar="false"
-        Closing="MainWindow_Closing">
+        ShowInTaskbar="false">
     <Grid x:Name="mainGrid">
         <Canvas x:Name="canvasOverlay" Grid.ZIndex="1" MouseLeave="ZoomedImg_MouseLeave"></Canvas>
         <Grid x:Name="IconGrid" Margin="5, 5, 5, 5">
@@ -26,6 +25,5 @@
                 <SolidColorBrush Opacity="0.1" Color="White"/>
             </Grid.Background>
         </Grid>
-        <Line Name="BottomLine" Stroke="White" StrokeThickness="4" X1="0" X2="900" Y1="96" Y2="96" Margin="0" />
     </Grid>
 </Window>

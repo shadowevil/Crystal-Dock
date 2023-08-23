@@ -19,63 +19,50 @@ using Cursors = System.Windows.Input.Cursors;
 using IconD = System.Drawing.Icon;
 using CancelEventArgs = System.ComponentModel.CancelEventArgs;
 using System.Diagnostics;
+using System.Windows.Shapes;
+using Path = System.IO.Path;
 
 namespace CrystalDock
 {
     public partial class MainWindow : Window
     {
         public static MainWindow? _instance;
-        private Settings? settings;
-        private NotifyIcon TaskBarIcon = new NotifyIcon();
 
         [DllImport("shell32.dll", SetLastError = true)]
         private static extern IntPtr ShellExecute(IntPtr hwnd, string lpOperation, string lpFile, string? lpParameters, string? lpDirectory, int nShowCmd);
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-        [DllImport("user32.dll")]
-        static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-
-        private const int GWL_EX_STYLE = -20;
-        private const int WS_EX_APPWINDOW = 0x00040000, WS_EX_TOOLWINDOW = 0x00000080;
-        private void ExitApplication(object? sender, EventArgs e) => this.Close();
 
         public MainWindow()
         {
             InitializeComponent();
 
-            InitializeSettings();
             InitializeUI();
-            InitializeTaskBarIcon();
             LoadButtons();
         }
 
-        private void InitializeSettings()
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            if((settings = new Settings(Properties.Resources.SettingsIniFile)) != null)
-            {
-                if (settings.IsDockLocked)
-                {
-                    IconGrid.Background.Opacity = 0.005;
-                }
-            }
+            //Variable to hold the handle for the form
+            var helper = new WindowInteropHelper(this).Handle;
+            //Performing some magic to hide the form from Alt+Tab
+            App.SetWindowLong(helper, App.GWL_EX_STYLE, (App.GetWindowLong(helper, App.GWL_EX_STYLE) | App.WS_EX_TOOLWINDOW) & ~App.WS_EX_APPWINDOW);
         }
 
         private void InitializeUI()
         {
-            if (settings == null)
+            if (App.settings == null)
             {
                 this.Close();
                 return;
             }
 
-            this.Top = Properties.Settings.Default.WindowTop;
-            this.Left = Properties.Settings.Default.WindowLeft;
+            this.Top = Properties.Settings.Default.AppDockTop;
+            this.Left = Properties.Settings.Default.AppDockLeft;
 
             this.AllowDrop = true;
             _instance = this;
 
-            int iconSize = (int)settings.GetValue<UInt32>("Global", "IconSize");
-            int iconMargins = (int)settings.GetValue<UInt32>("Global", "IconMargins");
+            int iconSize = (int)App.settings.GetValue<UInt32>("Global", "IconSize");
+            int iconMargins = (int)App.settings.GetValue<UInt32>("Global", "IconMargins");
 
             this.Width = iconSize * 2 + iconMargins;
             this.Height = iconSize * 2;
@@ -84,51 +71,29 @@ namespace CrystalDock
 
             ShiftWindowOntoScreenHelper.ShiftWindowOntoScreen(this);
 
-            Properties.Settings.Default.WindowTop = this.Top;
-            Properties.Settings.Default.WindowLeft = this.Left;
+            Properties.Settings.Default.AppDockTop = this.Top;
+            Properties.Settings.Default.AppDockLeft = this.Left;
             Properties.Settings.Default.Save();
-        }
 
-        private void InitializeTaskBarIcon()
-        {
-            if (settings == null)
+            Line bottomLine = new Line
             {
-                this.Close();
-                return;
-            }
-
-            TaskBarIcon.Icon = Properties.Resources.CrystalDockIcon_Plain;
-            TaskBarIcon.Text = "Crystal Dock";
-            TaskBarIcon.Visible = true;
-
-            ContextMenuStrip cm = new ContextMenuStrip();
-            ToolStripMenuItem dockToggle = new ToolStripMenuItem()
-            {
-                Name = "DockToggle",
-                Checked = settings.IsDockLocked,
-                Text = "Dock Locked",
-                CheckOnClick = true
+                Name = "BottomLine",
+                Stroke = Brushes.White,
+                StrokeThickness = 4,
+                X1 = Settings.settingsInstance!.GetValue<UInt32>("Global", "IconMargins"),
+                X2 = this.Width - Settings.settingsInstance!.GetValue<UInt32>("Global", "IconMargins"),
+                Y1 = this.Height - 8,
+                Y2 = this.Height - 8,
+                Margin = new Thickness(0)
             };
-            dockToggle.Click += ToggleDockLocking;
-            cm.Items.Add(dockToggle);
-            cm.Items.Add(new ToolStripSeparator());
-            cm.Items.Add("Exit", null, new EventHandler(ExitApplication));
 
-            TaskBarIcon.ContextMenuStrip = cm;
-
-            TaskBarIcon.MouseClick += (s, e) =>
-            {
-                if (e.Button == MouseButtons.Right && TaskBarIcon.ContextMenuStrip != null)
-                {
-                    TaskBarIcon.ContextMenuStrip.Show();
-                }
-            };
+            mainGrid.Children.Add(bottomLine);
         }
 
         private void MainWindow_MouseLeave(object sender, MouseEventArgs e)
         {
-            if (settings == null) return;
-            if (!settings.IsDockLocked)
+            if (App.settings == null) return;
+            if (!App.settings.IsDockLocked)
             {
                 IconGrid.Background.Opacity = 0.1;
                 return;
@@ -141,16 +106,10 @@ namespace CrystalDock
             canvasOverlay.Children.Clear();
         }
 
-        private void MainWindow_Closing(object sender, CancelEventArgs e)
-        {
-            if (settings == null) return;
-            settings.SaveSettings();
-        }
-
         private void MainWindow_MouseEnter(object sender, MouseEventArgs e)
         {
-            if (settings == null) return;
-            if (!settings.IsDockLocked)
+            if (App.settings == null) return;
+            if (!App.settings.IsDockLocked)
             {
                 IconGrid.Background.Opacity = 0.1;
                 return;
@@ -163,18 +122,18 @@ namespace CrystalDock
         }
         private void MainWindow_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (settings == null) return;
-            if (settings.IsDockLocked) return;
+            if (App.settings == null) return;
+            if (App.settings.IsDockLocked) return;
             ShiftWindowOntoScreenHelper.ShiftWindowOntoScreen(this);
-            Properties.Settings.Default.WindowTop = this.Top;
-            Properties.Settings.Default.WindowLeft = this.Left;
+            Properties.Settings.Default.AppDockTop = this.Top;
+            Properties.Settings.Default.AppDockLeft = this.Left;
             Properties.Settings.Default.Save();
         }
 
         private void MainWindow_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (settings == null) return;
-            if (settings.IsDockLocked) return;
+            if (App.settings == null) return;
+            if (App.settings.IsDockLocked) return;
             if (e.ChangedButton == MouseButton.Left)
                 this.DragMove();
         }
@@ -184,9 +143,9 @@ namespace CrystalDock
             e.Handled = true;
             base.OnDrop(e);
 
-            if (settings == null)
+            if (App.settings == null)
                 return;
-            if (settings.IsDockLocked) return;
+            if (App.settings.IsDockLocked) return;
 
                 if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -195,7 +154,7 @@ namespace CrystalDock
                 {
                     string filePath = filePaths[0];
                     string extension = Path.GetExtension(filePath).ToLower().Substring(1);
-                    string savePath = Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + settings.NextEntry;
+                    string savePath = Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + App.settings.NextEntry;
 
                     if(File.Exists(savePath + ".png"))
                     {
@@ -237,10 +196,10 @@ namespace CrystalDock
 
                     File.Copy(savePath + ".png", savePath + "_over.png");
 
-                    iconInfo.IconImage = settings.NextEntry + ".png";
-                    iconInfo.IconImageHover = settings.NextEntry + "_over.png";
+                    iconInfo.IconImage = App.settings.NextEntry + ".png";
+                    iconInfo.IconImageHover = App.settings.NextEntry + "_over.png";
                     iconInfo.Action = URL;
-                    settings.AddEntry(iconInfo);
+                    App.settings.AddEntry(iconInfo);
                     LoadButtons();
                 }
             }
@@ -248,7 +207,7 @@ namespace CrystalDock
 
         private void IconImg_MouseEnter(object sender, MouseEventArgs e)
         {
-            if (settings == null) return;
+            if (App.settings == null) return;
             if (sender is Image img)
             {
                 KeyValuePair<string, IconInfo> iconInfo = (KeyValuePair<string, IconInfo>)img.Tag;
@@ -257,7 +216,7 @@ namespace CrystalDock
                 int columnIndex = Grid.GetColumn(img);
 
                 // Get the position based on the icon's column index within the IconGrid
-                double left = columnIndex * (settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins"));
+                double left = columnIndex * (App.settings.GetValue<UInt32>("Global", "IconSize") + App.settings.GetValue<int>("Global", "IconMargins"));
                 double top = 0;
 
                 // Create a new Image for the zoomed icon
@@ -310,14 +269,14 @@ namespace CrystalDock
 
         private void IconImg_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (settings == null) return;
-            e.Handled = settings.IsDockLocked;
+            if (App.settings == null) return;
+            e.Handled = App.settings.IsDockLocked;
         }
 
         private void IconImg_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (settings == null) return;
-            if (!settings.IsDockLocked) return;
+            if (App.settings == null) return;
+            if (!App.settings.IsDockLocked) return;
             if (sender is Image iconImg)
             {
                 if (iconImg.Tag is KeyValuePair<string, IconInfo> tag)
@@ -344,7 +303,7 @@ namespace CrystalDock
             MenuItem removeItem = new MenuItem()
             {
                 Header = "Remove",
-                Command = new RelayCommand<string>(settings!.RemoveEntry),
+                Command = new RelayCommand<string>(App.settings!.RemoveEntry),
                 CommandParameter = iconKey
             };
             MenuItem RefreshItem = new MenuItem()
@@ -369,7 +328,7 @@ namespace CrystalDock
 
         private void ShowSettingsWindow(string infoKey)
         {
-            if (settings == null) return;
+            if (App.settings == null) return;
             using (ModifyIcon modifyIcon = new ModifyIcon(infoKey))
             {
                 modifyIcon.Owner = this;
@@ -378,30 +337,23 @@ namespace CrystalDock
                 if (modifyIcon.ShowDialog() == true)
                 {
                     if (modifyIcon.iconInfo == null) return;
-                    IconInfo info = settings.GetIconInfo(infoKey)!;
+                    IconInfo info = App.settings.GetIconInfo(infoKey)!;
                     if (modifyIcon.iconInfo.IconImage != info.IconImage) File.Delete(Properties.Resources.IconFolder + info!.IconImage);
                     if (modifyIcon.iconInfo.IconImageHover != info.IconImageHover) File.Delete(Properties.Resources.IconFolder + info!.IconImageHover);
-                    settings.UpdateEntry(infoKey, modifyIcon.iconInfo);
+                    App.settings.UpdateEntry(infoKey, modifyIcon.iconInfo);
                     LoadButtons();
                 }
             }
         }
 
-        private void ToggleDockLocking(object? sender, EventArgs e)
-        {
-            if (settings == null) return;
-            settings.ToggleDockPositionLock();
-            IconGrid.Background.Opacity = settings.IsDockLocked ? 0.005 : 0.1;
-        }
-
         public void LoadButtons()
         {
-            if (settings == null) return;
+            if (App.settings == null) return;
             ClearIconGrid();
 
             int column = 0;
 
-            foreach (var iconEntry in settings.GetIconEntries())
+            foreach (var iconEntry in App.settings.GetIconEntries())
             {
                 IconInfo iconInfo = iconEntry.Value;
                 string iconImagePath = Path.Combine(Directory.GetCurrentDirectory(), Properties.Resources.IconFolder, iconInfo.IconImage);
@@ -437,12 +389,12 @@ namespace CrystalDock
 
         private Image? CreateIconImage(KeyValuePair<string, IconInfo> iconInfo, string imagePath, int column)
         {
-            if (settings == null) return null;
+            if (App.settings == null) return null;
             Image iconImg = new Image
             {
                 Name = iconInfo.Value.IconImage.Substring(0, iconInfo.Value.IconImage.Length - 4),
-                Width = settings.GetValue<UInt32>("Global", "IconSize"),
-                Height = settings.GetValue<UInt32>("Global", "IconSize"),
+                Width = App.settings.GetValue<UInt32>("Global", "IconSize"),
+                Height = App.settings.GetValue<UInt32>("Global", "IconSize"),
                 //Cursor = System.Windows.Input.Cursors.Hand,
                 Tag = iconInfo,
                 ContextMenu = CreateContextMenu(iconInfo.Key),
@@ -476,35 +428,35 @@ namespace CrystalDock
             return iconImg;
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            //Variable to hold the handle for the form
-            var helper = new WindowInteropHelper(this).Handle;
-            //Performing some magic to hide the form from Alt+Tab
-            SetWindowLong(helper, GWL_EX_STYLE, (GetWindowLong(helper, GWL_EX_STYLE) | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW);
-        }
-
         private void AdjustGridSizes()
         {
-            if (settings == null) return;
-            int iconSizeWithMargin = (int)settings.GetValue<UInt32>("Global", "IconSize") + settings.GetValue<int>("Global", "IconMargins");
+            if (App.settings == null) return;
+            int iconSizeWithMargin = (int)App.settings.GetValue<UInt32>("Global", "IconSize") + App.settings.GetValue<int>("Global", "IconMargins");
             int iconCount = IconGrid.Children.Count;
 
             if (iconCount > 0)
             {
-                this.Width = (settings.GetValue<UInt32>("Global", "IconSize") + (settings.GetValue<int>("Global", "IconMargins") * 2)) * iconCount;
+                this.Width = (App.settings.GetValue<UInt32>("Global", "IconSize") + (App.settings.GetValue<int>("Global", "IconMargins") * 2)) * iconCount;
 
                 IconGrid.MaxWidth = iconSizeWithMargin * iconCount;
-                IconGrid.Width = IconGrid.MaxWidth + settings.GetValue<int>("Global", "IconMargins");
+                IconGrid.Width = IconGrid.MaxWidth + App.settings.GetValue<int>("Global", "IconMargins");
                 IconGrid.Height = iconSizeWithMargin;
 
-                mainGrid.MaxWidth = IconGrid.MaxWidth + settings.GetValue<int>("Global", "IconMargins");
+                mainGrid.MaxWidth = IconGrid.MaxWidth + App.settings.GetValue<int>("Global", "IconMargins");
                 mainGrid.Width = mainGrid.MaxWidth;
-                mainGrid.Height = IconGrid.Height + settings.GetValue<int>("Global", "IconMargins");
+                mainGrid.Height = IconGrid.Height + App.settings.GetValue<int>("Global", "IconMargins");
 
-                BottomLine.X2 = mainGrid.Width;
-                BottomLine.Y1 = mainGrid.Height - 4;
-                BottomLine.Y2 = mainGrid.Height - 4;
+                foreach (var c in mainGrid.Children)
+                {
+                    if (c is Line BottomLine)
+                    {
+                        BottomLine.X1 = 0;
+                        BottomLine.X2 = mainGrid.Width;
+                        BottomLine.Y1 = mainGrid.Height - 4;
+                        BottomLine.Y2 = mainGrid.Height - 4;
+                        break;
+                    }
+                }
             }
         }
     }
