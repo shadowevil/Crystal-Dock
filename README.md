@@ -15,6 +15,8 @@ Some Features:
  - Quick refresh by right clicking and refreshing
  - Settings menu which allows you to modify icons without going into the settings.ini file
  - Popup icon which indicates where your mouse is hovering even if there isn't a hover icon specified
+ - New System Monitor window which, currently, only allows viewing the drives installed and the total/free space
+ - Added a way to show the windows again if a user used Win+D or the Taskbar Show/Hide Windows Button previously there was no way to get the window back without closing and reopening. It's kind of a hacky fix but it works.
 
 ![Screenshot 2023-08-20 001443](https://github.com/shadowevil/Crystal-Dock/assets/104342/1150d335-a2c9-4760-9975-65bc7d2b96fa)
 ![Screenshot 2023-08-20 001426](https://github.com/shadowevil/Crystal-Dock/assets/104342/a7cb1b47-4d53-4463-bb9e-db8f456418a5)
