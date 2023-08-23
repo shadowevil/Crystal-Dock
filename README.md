@@ -1,6 +1,6 @@
 ![CrystalDockIcon](https://github.com/shadowevil/Crystal-Dock/assets/104342/f316cab2-489a-49f3-a003-53ae0a6a33d5)
 
- #CrystalDock
+# CrystalDock
 
 This Dock was inspired by Silmeria Dock which can be found here: https://www.deviantart.com/mixsilmeria/art/Silmeria-Dock-670809026
 
@@ -27,7 +27,7 @@ Some Features:
 ![Screenshot 2023-08-18 011324](https://github.com/shadowevil/Crystal-Dock/assets/104342/4414a731-eccb-4cfb-a750-03c3cf0c0fbb)
 ![Screenshot 2023-08-18 011315](https://github.com/shadowevil/Crystal-Dock/assets/104342/71e8d6ae-cabe-44a9-a5bd-ebf682a5da64)
 
-###Requirements
+### Requirements
 - ***Operating System:*** Windows 7.0 or newer
 - ***Runtime:*** .NET 6.0 Runtime
 - ***Architecture:*** 64-bit (x64) Windows
