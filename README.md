@@ -24,3 +24,9 @@ Some Features:
 ![Screenshot 2023-08-18 011333](https://github.com/shadowevil/Crystal-Dock/assets/104342/9e1f63ef-68c3-478a-9ec7-c434d54bd7e6)
 ![Screenshot 2023-08-18 011324](https://github.com/shadowevil/Crystal-Dock/assets/104342/4414a731-eccb-4cfb-a750-03c3cf0c0fbb)
 ![Screenshot 2023-08-18 011315](https://github.com/shadowevil/Crystal-Dock/assets/104342/71e8d6ae-cabe-44a9-a5bd-ebf682a5da64)
+
+###Requirements
+- ***Operating System:*** Windows 7.0 or newer
+- ***Runtime:*** .NET 6.0 Runtime
+- ***Architecture:*** 64-bit (x64) Windows
+- ***Dependencies:*** IWshRuntimeLibrary (if not already included)
