@@ -1,14 +1,12 @@
-﻿using CrystalDock.Properties;
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -22,6 +20,11 @@ namespace CrystalDock
     /// </summary>
     public partial class SystemMonitor : Window
     {
+        public const ulong BYTES = 1024;
+        public const ulong MEGABYTES = BYTES * BYTES;
+        public const ulong GIGABYTES = MEGABYTES * BYTES;
+        public const ulong TERABYTES = GIGABYTES * BYTES;
+
         public static SystemMonitor? _instance;
         private bool isResizing = false;
         private bool EnteredResizing = false;
@@ -30,6 +33,10 @@ namespace CrystalDock
         private Grid driveEntryGrid = new Grid();
         private Line bottomLine = new Line();
 
+        private static ConcurrentDictionary<string, DriveEntry> driveEntries = new ConcurrentDictionary<string, DriveEntry>();
+        private Timer updateTimer;
+        private bool isUpdating = false;
+
         public class DriveEntry
         {
             public BitmapImage? DriveIcon { get; set; } = null;
@@ -37,6 +44,7 @@ namespace CrystalDock
             public string DriveInfoText { get; set; } = "";
             public double TotalSpace { get; set; }
             public double UsedSpace { get; set; }
+            public bool NeedsUpdating { get; set; } = true;
         }
 
         public SystemMonitor()
@@ -45,6 +53,20 @@ namespace CrystalDock
             _instance = this;
 
             LoadUIInformation();
+
+            updateTimer = new Timer(UpdateTimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+        }
+
+        private void UpdateTimerCallback(object? state)
+        {
+            Dispatcher.Invoke(new Action(() =>
+            {
+                if (isUpdating) return;
+                isUpdating = true;
+                GatherDriveInfo();
+                UpdateUI();
+                isUpdating = false;
+            }));
         }
 
         private void LoadUIInformation()
@@ -59,79 +81,163 @@ namespace CrystalDock
                 resizeGripBottomRight.Visibility = Visibility.Hidden;
             }
             mainStackPanel.VerticalAlignment = VerticalAlignment.Bottom;
-            CreateDriveEntries();
+            GatherDriveInfo();
         }
 
-        private void CreateDriveEntries()
+        private async void GatherDriveInfo()
         {
-            DriveInfo[] drives = DriveInfo.GetDrives();
-
-            foreach (DriveInfo drive in drives)
+            await Task.Run(() =>
             {
-                if (drive.IsReady)
+                DriveInfo[] drives = DriveInfo.GetDrives();
+
+                foreach (DriveInfo drive in drives)
                 {
-                    string driveName = drive.Name;
-                    long totalSize = drive.TotalSize;
-                    long freeSpace = drive.AvailableFreeSpace;
-
-                    string driveInfo = $"Drive: {driveName}\nTotal Space: {totalSize / (1024 * 1024 * 1024)} GB\nFree Space: {freeSpace / (1024 * 1024 * 1024)} GB\n";
-
-                    // Create the main grid for the drive entry
-                    driveEntryGrid = new Grid();
-                    driveEntryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) }); // Column for icon
-                    driveEntryGrid.ColumnDefinitions.Add(new ColumnDefinition()); // Column for info
-
-                    // Create the image for the drive icon
-                    Image driveImage = new Image
+                    if (drive.IsReady)
                     {
-                        Width = 75,
-                        Height = 75,
-                        Margin = new Thickness(10)
-                    };
+                        double totalSize = drive.TotalSize;
+                        double freeSpace = drive.AvailableFreeSpace;
+                        double usedSpace = totalSize - freeSpace;
 
-                    // Set the drive icon image source here
-                    BitmapImage bitmapImage = new BitmapImage(new Uri(Directory.GetCurrentDirectory() + "\\" + Properties.Resources.IconFolder + "DriveIcon.png"));
-                    driveImage.Source = bitmapImage;
+                        var driveLetter = drive.Name;
+                        if (driveEntries.ContainsKey(driveLetter))
+                        {
+                            var existingDriveEntry = driveEntries[driveLetter];
+                            double oldFreeSpace = existingDriveEntry.TotalSpace - existingDriveEntry.UsedSpace;
+                            if (Math.Abs(freeSpace - oldFreeSpace) >= MEGABYTES * 512)  // 1 GB in bytes
+                            {
+                                // Update the properties directly without reinitializing the DriveIcon
+                                string driveText = $"{driveLetter}";
+                                var driveTotalSize = GetDriveSizeStandard(totalSize);
+                                var driveAvailableFreeSpace = GetDriveSizeStandard(freeSpace);
+                                driveText += $" {driveAvailableFreeSpace.Key.ToString("F2")} {driveAvailableFreeSpace.Value}/{driveTotalSize.Key.ToString("F2")} {driveTotalSize.Value}";
+                                existingDriveEntry.DriveInfoText = driveText;
+                                existingDriveEntry.TotalSpace = totalSize;
+                                existingDriveEntry.UsedSpace = usedSpace;
+                                existingDriveEntry.NeedsUpdating = true;
+                            }
+                        }
+                        else
+                        {
+                            // New drive entry
+                            DriveEntry driveEntry = new DriveEntry
+                            {
+                                DriveIcon = Dispatcher.Invoke(() => new BitmapImage(new Uri(Directory.GetCurrentDirectory() + "\\\\" + Properties.Resources.IconFolder + "DriveIcon.png"))),
+                                DriveLetter = driveLetter,
+                                TotalSpace = totalSize,
+                                UsedSpace = usedSpace,
+                                NeedsUpdating = true
+                            };
+                            string driveText = $"{driveLetter}";
+                            var driveTotalSize = GetDriveSizeStandard(totalSize);
+                            var driveAvailableFreeSpace = GetDriveSizeStandard(freeSpace);
+                            driveText += $" {driveAvailableFreeSpace.Key.ToString("F2")} {driveAvailableFreeSpace.Value}/{driveTotalSize.Key.ToString("F2")} {driveTotalSize.Value}";
+                            driveEntry.DriveInfoText = driveText;
+                            driveEntries[driveLetter] = driveEntry;
+                        }
+                    }
+                }
+            });
+        }
 
-                    // Create the grid for progress bar and drive info
-                    Grid infoGrid = new Grid();
-                    infoGrid.RowDefinitions.Add(new RowDefinition()); // Row for progress bar
-                    infoGrid.RowDefinitions.Add(new RowDefinition()); // Row for text info
-
-                    // Create progress bar
-                    ProgressBar progressBar = new ProgressBar
+        private void UpdateUI()
+        {
+            foreach (DriveEntry driveEntry in driveEntries.Values)
+            {
+                if (driveEntry.NeedsUpdating)
+                {
+                    // Find the existing grid for the drive letter
+                    Grid? existingGrid = mainStackPanel.Children.OfType<Grid>().FirstOrDefault(g => g.Name == "drive_" + driveEntry.DriveLetter[0]);
+                    if (existingGrid != null)
                     {
-                        Height = 20,
-                        MaxWidth = this.Width - driveEntryGrid.ColumnDefinitions[0].Width.Value - 20,
-                        Maximum = totalSize,
-                        Value = totalSize - freeSpace,
-                        VerticalAlignment = VerticalAlignment.Bottom
-                    };
+                        // Update the existing grid
+                        var progressBar = existingGrid.Children.OfType<Grid>().First().Children.OfType<ProgressBar>().First();
+                        progressBar.Value = driveEntry.UsedSpace;
 
-                    // Create text block for drive info
-                    TextBlock textBlock = new TextBlock
+                        var textBlock = existingGrid.Children.OfType<Grid>().First().Children.OfType<TextBlock>().First();
+                        textBlock.Text = driveEntry.DriveInfoText;
+                    } 
+                    else
                     {
-                        Text = driveInfo,
-                        Foreground = new SolidColorBrush(Colors.White),
-                        Margin = new Thickness(1),
-                        TextWrapping = TextWrapping.Wrap
-                    };
+                        // Create the main grid for the drive entry
+                        driveEntryGrid = new Grid();
+                        driveEntryGrid.Name = "drive_" + driveEntry.DriveLetter[0];
+                        driveEntryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+                        driveEntryGrid.ColumnDefinitions.Add(new ColumnDefinition());
 
-                    // Add progress bar and text block to info grid
-                    Grid.SetRow(progressBar, 0);
-                    infoGrid.Children.Add(progressBar);
-                    Grid.SetRow(textBlock, 1);
-                    infoGrid.Children.Add(textBlock);
+                        // Set the drive icon image source from DriveEntry
+                        Image driveImage = new Image
+                        {
+                            Width = 75,
+                            Height = 75,
+                            Margin = new Thickness(10),
+                            Source = driveEntry.DriveIcon
+                        };
 
-                    // Add drive image and info grid to drive entry grid
-                    driveEntryGrid.Children.Add(driveImage);
-                    Grid.SetColumn(infoGrid, 1);
-                    driveEntryGrid.Children.Add(infoGrid);
+                        // Create the grid for progress bar and drive info
+                        Grid infoGrid = new Grid();
+                        infoGrid.RowDefinitions.Add(new RowDefinition());
+                        infoGrid.RowDefinitions.Add(new RowDefinition());
 
-                    // Add drive entry grid to main stack panel
-                    mainStackPanel.Children.Add(driveEntryGrid);
+                        // Create progress bar
+                        ProgressBar progressBar = new ProgressBar
+                        {
+                            Height = 20,
+                            MaxWidth = this.Width - driveEntryGrid.ColumnDefinitions[0].Width.Value - 20,
+                            Maximum = driveEntry.TotalSpace,
+                            Value = driveEntry.UsedSpace,
+                            VerticalAlignment = VerticalAlignment.Bottom
+                        };
+
+                        // Create text block for drive info
+                        TextBlock textBlock = new TextBlock
+                        {
+                            Text = driveEntry.DriveInfoText,
+                            Foreground = new SolidColorBrush(Colors.White),
+                            Margin = new Thickness(1),
+                            TextWrapping = TextWrapping.Wrap
+                        };
+
+                        // Add progress bar and text block to info grid
+                        Grid.SetRow(progressBar, 0);
+                        infoGrid.Children.Add(progressBar);
+                        Grid.SetRow(textBlock, 1);
+                        infoGrid.Children.Add(textBlock);
+
+                        // Add drive image and info grid to drive entry grid
+                        driveEntryGrid.Children.Add(driveImage);
+                        Grid.SetColumn(infoGrid, 1);
+                        driveEntryGrid.Children.Add(infoGrid);
+
+                        // Add drive entry grid to main stack panel
+                        mainStackPanel.Children.Add(driveEntryGrid);
+                        driveEntry.NeedsUpdating = false;
+
+                    }
+                    updateTimer.Change(TimeSpan.Zero, TimeSpan.FromMinutes(1));
                 }
             }
+        }
+
+        private KeyValuePair<double, string> GetDriveSizeStandard(double size)
+        {
+            KeyValuePair<double, string> rtn = new KeyValuePair<double, string>();
+            if (size / TERABYTES < 1024)
+            {
+                rtn = new KeyValuePair<double, string>(size / TERABYTES, "TB");
+            }
+            if (size / GIGABYTES < 1024)
+            {
+                rtn = new KeyValuePair<double, string>(size / GIGABYTES, "GB");
+            }
+            if (size / MEGABYTES < 1024)
+            {
+                rtn = new KeyValuePair<double, string>(size / MEGABYTES, "MB");
+            }
+            if (size / BYTES < 1024)
+            {
+                rtn = new KeyValuePair<double, string>(size / BYTES, "BYTES");
+            }
+            return rtn;
         }
 
         private void SysMonWindow_Loaded(object sender, RoutedEventArgs e)
